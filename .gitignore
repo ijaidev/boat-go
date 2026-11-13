@@ -1,0 +1,29 @@
+# Build outputs
+/bin/
+/dist/
+/build/
+*.exe
+*.test
+*.out
+coverage.*
+
+# Caches and dependency trees
+.cache/
+.gocache/
+node_modules/
+.venv/
+__pycache__/
+
+# Editor and OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Logs and local files
+*.log
+*.local
+.env
+.env.*
+!.env.example

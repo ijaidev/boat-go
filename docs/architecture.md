@@ -1,7 +1,8 @@
 # Architecture
 
-Status: design phase. No SDK code exists yet. This document describes the target architecture and
-the rules that keep it maintainable as the SDK grows.
+Status: implementation started. The kernel, transport, generated `model` package, root facade and
+the `sandboxes` service exist. The remaining domain services are in progress. This document
+describes the target architecture and the rules that keep it maintainable as the SDK grows.
 
 ## 1. Context
 
@@ -240,8 +241,14 @@ network drop and must not duplicate output.
 - Review spec updates as normal pull requests. Do not auto-update the spec in CI.
 
 The spec is OpenAPI 3.1 and uses type arrays, `allOf` envelopes, `const` discriminators and one true
-`oneOf` (command response). Verify that the chosen generator handles all of these before committing
-to it.
+`oneOf` (command response). It is pinned at `openapi/boat-v1.yaml`, fetched 2026-11-13 from
+<https://docs.boat.dev/openapi/boat-v1.yaml> (upstream last modified 2026-11-11).
+
+The generator is `oapi-codegen` v2.8.2 with models-only output. The `ToCamelCaseWithInitialisms`
+name normalizer is required so public fields use `ID`, `URL`, `API`, `HTTP` and similar initialisms.
+The generated package imports `github.com/oapi-codegen/runtime` for nullable dates, UUIDs and union
+serialization; that dependency is the reason the generated `model` package is not stdlib-only. The
+raw generated client is not used and is not exposed.
 
 ## 12. Cross-domain workflows
 
@@ -281,13 +288,14 @@ to it.
 | Streaming | Explicit `Stream[T]` | Cancellation, backpressure, testability |
 | Docs | `/docs` + godoc | Design and symbol-level docs serve different readers |
 | Tests | `httptest` + fixtures | Fast, deterministic, no account required |
+| Go module | `github.com/ijaidev/boat-go` | Public remote |
+| Go version | 1.26 | Modern stdlib; still widely available |
+| Codegen | `oapi-codegen` v2.8.2, models only | Handles the 3.1 spec; the facade stays hand-written |
+| Optional JSON | `*core.Optional[T]` | `ttlSeconds` needs absent, null and value states |
+| Name normalization | `ToCamelCaseWithInitialisms` | Public names use `ID`, `URL`, `API`, `HTTP` |
 
 ## 16. Open questions
 
-- Which generator: `oapi-codegen`, `ogen`, or a hybrid? Decide after a compile spike on the full
-  spec.
-- Minimum Go version: depends on the generator and the team's toolchain. Record the choice in
-  `go.mod` and here.
-- Public module path: decide when the first `go.mod` and remote are created.
 - Whether to expose the spec's `named-snapshots` endpoints, which are not covered in the main docs.
 - Whether a public `boattest` package is worth the maintenance cost.
+- Whether the `named-snapshots` and `saved-snapshots` APIs should be one service or two.
