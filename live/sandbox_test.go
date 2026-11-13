@@ -17,10 +17,35 @@ import (
 	"time"
 
 	"github.com/ijaidev/boat-go"
+	"github.com/ijaidev/boat-go/account"
 	"github.com/ijaidev/boat-go/commands"
 	"github.com/ijaidev/boat-go/core"
 	"github.com/ijaidev/boat-go/sandboxes"
 )
+
+func TestLive_ReadOnly(t *testing.T) {
+	key := os.Getenv("BOAT_API_KEY")
+	if key == "" {
+		t.Skip("BOAT_API_KEY is not set")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	client, err := boat.New(boat.Config{APIKey: key})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	if _, err := client.Account.Me(ctx); err != nil {
+		t.Fatalf("Me: %v", err)
+	}
+	if _, err := client.Account.Limits(ctx, account.LimitsRequest{}); err != nil {
+		t.Fatalf("Limits: %v", err)
+	}
+	if _, err := client.Sandboxes.List(ctx, sandboxes.ListRequest{Limit: 1}); err != nil {
+		t.Fatalf("List: %v", err)
+	}
+}
 
 func TestLive_SandboxCreateRunDelete(t *testing.T) {
 	key := os.Getenv("BOAT_API_KEY")
@@ -41,6 +66,9 @@ func TestLive_SandboxCreateRunDelete(t *testing.T) {
 		TTLSeconds: core.Some(120),
 	})
 	if err != nil {
+		if core.IsCode(err, "billing_required") {
+			t.Skipf("account cannot create sandboxes (no active plan): %v", err)
+		}
 		t.Fatalf("Create: %v", err)
 	}
 	t.Cleanup(func() {

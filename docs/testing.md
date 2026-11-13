@@ -152,6 +152,8 @@ Requirements:
 - Create the smallest sandbox (`small`) with a short TTL.
 - Always clean up with `t.Cleanup` (stop, then delete if the test created it).
 - Print the sandbox id on failure for debugging, never the API key.
+- A create test may skip on `402 billing_required`: the key is valid but the account has no active
+  plan. Keep a read-only live test so authentication and transport still get exercised.
 - Keep the number of live tests tiny; they cost money and are flaky by nature.
 
 Run them explicitly:
