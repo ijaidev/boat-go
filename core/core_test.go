@@ -4,7 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
+	"net/http"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -262,5 +265,82 @@ func TestNewIdempotencyKey_IsUUIDv4(t *testing.T) {
 			t.Fatalf("duplicate key %q", key)
 		}
 		seen[key] = struct{}{}
+	}
+}
+
+func TestParseAPIError_FullEnvelope(t *testing.T) {
+	t.Parallel()
+
+	header := http.Header{"X-Request-Id": {"req_header"}}
+	body := []byte(`{
+		"ok": false, "type": "sandbox.error", "status": 409,
+		"code": "sandbox_not_ready", "message": "not ready", "requestId": "req_body",
+		"error": {"code": "sandbox_not_ready", "message": "not ready", "status": 409,
+			"details": {"retryable": true, "reason": "restoring"}},
+		"retryAfterSeconds": 3
+	}`)
+	err := core.ParseAPIError(http.StatusConflict, header, body)
+	if err.Status != 409 || err.Code != "sandbox_not_ready" || err.RequestID != "req_body" {
+		t.Fatalf("error = %#v", err)
+	}
+	if err.RetryAfter != 3*time.Second {
+		t.Fatalf("RetryAfter = %v, want 3s", err.RetryAfter)
+	}
+	if !core.Retryable(err) {
+		t.Fatal("Retryable = false, want true")
+	}
+}
+
+func TestParseAPIError_NonJSONBody(t *testing.T) {
+	t.Parallel()
+
+	err := core.ParseAPIError(http.StatusBadGateway, nil, []byte("sensitive"))
+	if err.Status != 502 || err.Code != "http_502" {
+		t.Fatalf("error = %#v", err)
+	}
+	if strings.Contains(err.Error(), "sensitive") {
+		t.Fatalf("error leaks body: %v", err)
+	}
+}
+
+func TestErrorFromResponse_ClosesBody(t *testing.T) {
+	t.Parallel()
+
+	body := &closeRecorder{Reader: strings.NewReader(`{"ok":false,"code":"not_found","message":"missing","status":404}`)}
+	resp := &http.Response{
+		StatusCode: http.StatusNotFound,
+		Header:     http.Header{},
+		Body:       body,
+	}
+	err := core.ErrorFromResponse(resp)
+	if !core.IsCode(err, "not_found") {
+		t.Fatalf("error = %v, want not_found", err)
+	}
+	if !body.closed {
+		t.Fatal("body was not closed")
+	}
+}
+
+type closeRecorder struct {
+	io.Reader
+	closed bool
+}
+
+func (c *closeRecorder) Close() error {
+	c.closed = true
+	return nil
+}
+
+func TestRetryAfterFromHeader(t *testing.T) {
+	t.Parallel()
+
+	if got := core.RetryAfterFromHeader(http.Header{"Retry-After": {"5"}}); got != 5*time.Second {
+		t.Fatalf("seconds = %v, want 5s", got)
+	}
+	if got := core.RetryAfterFromHeader(http.Header{"Retry-After": {"not a date"}}); got != 0 {
+		t.Fatalf("invalid = %v, want 0", got)
+	}
+	if got := core.RetryAfterFromHeader(nil); got != 0 {
+		t.Fatalf("nil = %v, want 0", got)
 	}
 }

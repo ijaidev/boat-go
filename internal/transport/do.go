@@ -29,17 +29,19 @@ func (c *Client) Do(ctx context.Context, req *core.Request, out any, opts ...cor
 	}
 
 	if resp.StatusCode >= http.StatusBadRequest {
-		return parseAPIError(resp, body)
+		return core.ParseAPIError(resp.StatusCode, resp.Header, body)
 	}
 
-	var env envelope
+	var env struct {
+		OK *bool `json:"ok"`
+	}
 	if len(body) > 0 {
 		if err := json.Unmarshal(body, &env); err != nil {
 			return fmt.Errorf("boat: decode response envelope: %w", err)
 		}
 	}
 	if env.OK != nil && !*env.OK {
-		return parseAPIError(resp, body)
+		return core.ParseAPIError(resp.StatusCode, resp.Header, body)
 	}
 	if out == nil {
 		return nil
@@ -98,7 +100,7 @@ func (c *Client) DoRaw(ctx context.Context, req *core.Request, opts ...core.Requ
 		}
 
 		if retryable && attempt+1 < attempts && shouldRetryStatus(resp.StatusCode) {
-			delay := c.retryDelay(attempt, parseRetryAfter(resp.Header))
+			delay := c.retryDelay(attempt, core.RetryAfterFromHeader(resp.Header))
 			if delay > maxRetryDelay {
 				return resp, nil
 			}
