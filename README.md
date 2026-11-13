@@ -45,4 +45,5 @@ Start with the rulebook and architecture:
 - [Architecture](docs/architecture.md)
 - [Testing and TDD](docs/testing.md)
 - [Service docs](docs/services/README.md)
+- [Examples](examples/README.md)
 - [Boat API reference](https://docs.boat.dev/api/v1)
