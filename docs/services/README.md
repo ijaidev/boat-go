@@ -22,7 +22,7 @@ A service is **not done** until:
 | Credentials | `credentials` | planned | — |
 | Account | `account` | planned | — |
 | Webhooks | `webhooks` | planned | — |
-| Telemetry | `telemetry` | planned | — |
+| Telemetry | `telemetry` | done | [telemetry.md](telemetry.md) |
 | CI | `ci` | planned | — |
 | Jobs | `jobs` | planned | — |
 

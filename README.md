@@ -27,7 +27,7 @@ _, err = client.Sandboxes.WaitUntilReady(ctx, sb.ID, sandboxes.WaitOptions{})
 
 The SDK is under active development. The kernel, transport, generated `model` package, root facade
 and the `agents`, `commands`, `files`, `sandboxes` and `snapshots` services exist today.
-`environments`, `credentials`, `account`, `webhooks`, `telemetry`, `ci` and `jobs` are next.
+`environments`, `credentials`, `account`, `webhooks`, `ci` and `jobs` are next.
 
 The API surface is intentionally small and concrete. There is no CLI, server or generated client
 leaking into the public API.
