@@ -9,3 +9,7 @@
 
 The spec is the source of truth for request and response schemas. Update it only in a reviewed pull
 request, then regenerate `model/` with `go generate ./...` and commit the result.
+
+The upstream spec contains public placeholder examples. One is a Stripe-style `whsec_...` value in
+the webhook response example; it is not a credential. `.github/secret_scanning.yml` excludes this
+third-party artifact from secret scanning so it does not create recurring false positives.
