@@ -4,6 +4,7 @@ import (
 	"github.com/ijaidev/boat-go/agents"
 	"github.com/ijaidev/boat-go/commands"
 	"github.com/ijaidev/boat-go/core"
+	"github.com/ijaidev/boat-go/files"
 	"github.com/ijaidev/boat-go/internal/transport"
 	"github.com/ijaidev/boat-go/sandboxes"
 	"github.com/ijaidev/boat-go/snapshots"
@@ -23,6 +24,7 @@ type Config = core.Config
 type Client struct {
 	Agents    *agents.Service
 	Commands  *commands.Service
+	Files     *files.Service
 	Sandboxes *sandboxes.Service
 	Snapshots *snapshots.Service
 }
@@ -39,6 +41,7 @@ func New(cfg Config) (*Client, error) {
 	return &Client{
 		Agents:    agents.New(transportClient),
 		Commands:  commands.New(transportClient),
+		Files:     files.New(transportClient),
 		Sandboxes: sandboxes.New(transportClient),
 		Snapshots: snapshots.New(transportClient),
 	}, nil

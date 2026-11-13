@@ -34,6 +34,9 @@ func TestNew_WiresServices(t *testing.T) {
 	if client.Commands == nil {
 		t.Fatal("Commands = nil")
 	}
+	if client.Files == nil {
+		t.Fatal("Files = nil")
+	}
 	if client.Sandboxes == nil {
 		t.Fatal("Sandboxes = nil")
 	}

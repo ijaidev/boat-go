@@ -195,7 +195,5 @@ Treat the returned URL as a credential.
 - `Artifact` supports one file per call, up to 50 MiB; v1 has no directory or tar artifact endpoint.
 - `List`, `Search` and `Find` are capped by the API (10,000 entries and 1,000 matches) and expose
   `truncated`; pagination may need a server-side change.
-- The root `boat.Client` does not yet expose a `Files` field; the maintainer wires services after
-  merge.
 - `ReadResult.Bytes` decodes base64 and returns every other encoding as raw bytes; a future API
   encoding would need a new case.
