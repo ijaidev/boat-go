@@ -344,3 +344,20 @@ func TestRetryAfterFromHeader(t *testing.T) {
 		t.Fatalf("nil = %v, want 0", got)
 	}
 }
+
+func TestParseAPIError_StringErrorCode(t *testing.T) {
+	t.Parallel()
+
+	body := []byte(`{"error":"scoped_api_key_creation_disabled","message":"not active","scopedCreationEnabled":false}`)
+	err := core.ParseAPIError(http.StatusServiceUnavailable, nil, body)
+	if err.Status != 503 || err.Code != "scoped_api_key_creation_disabled" {
+		t.Fatalf("error = %#v", err)
+	}
+	if err.Message != "not active" {
+		t.Fatalf("message = %q", err.Message)
+	}
+	v, ok := err.Details["scopedCreationEnabled"].(bool)
+	if !ok || v {
+		t.Fatalf("details = %#v", err.Details)
+	}
+}

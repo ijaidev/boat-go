@@ -92,7 +92,7 @@ func ParseAPIError(status int, header http.Header, body []byte) *APIError {
 	}
 
 	var env errorEnvelope
-	if len(body) > 0 && json.Unmarshal(body, &env) == nil && (env.Code != "" || env.Error != nil || env.Message != "") {
+	if len(body) > 0 && json.Unmarshal(body, &env) == nil && (env.Code != "" || len(env.Error) > 0 || env.Message != "") {
 		apiErr.Code = env.Code
 		apiErr.Message = env.Message
 		if env.RequestID != "" {
@@ -102,25 +102,39 @@ func ParseAPIError(status int, header http.Header, body []byte) *APIError {
 		if json.Unmarshal(env.Status, &numericStatus) == nil && numericStatus != 0 {
 			apiErr.Status = numericStatus
 		}
-		if env.Error != nil {
-			if apiErr.Code == "" {
-				apiErr.Code = env.Error.Code
-			}
-			if apiErr.Message == "" {
-				apiErr.Message = env.Error.Message
-			}
-			if env.Error.Details != nil {
-				apiErr.Details = env.Error.Details
-			}
-			if env.Error.Retryable != nil {
-				if apiErr.Details == nil {
-					apiErr.Details = make(map[string]any)
+		if len(env.Error) > 0 {
+			var detail errorDetail
+			if json.Unmarshal(env.Error, &detail) == nil {
+				if apiErr.Code == "" {
+					apiErr.Code = detail.Code
 				}
-				apiErr.Details["retryable"] = *env.Error.Retryable
+				if apiErr.Message == "" {
+					apiErr.Message = detail.Message
+				}
+				if detail.Details != nil {
+					apiErr.Details = detail.Details
+				}
+				if detail.Retryable != nil {
+					if apiErr.Details == nil {
+						apiErr.Details = make(map[string]any)
+					}
+					apiErr.Details["retryable"] = *detail.Retryable
+				}
+			} else {
+				var code string
+				if json.Unmarshal(env.Error, &code) == nil && apiErr.Code == "" {
+					apiErr.Code = code
+				}
 			}
 		}
 		if apiErr.Details == nil {
 			apiErr.Details = env.Details
+		}
+		if env.ScopedCreationEnabled != nil {
+			if apiErr.Details == nil {
+				apiErr.Details = make(map[string]any)
+			}
+			apiErr.Details["scopedCreationEnabled"] = *env.ScopedCreationEnabled
 		}
 		if env.RetryAfterSeconds != nil {
 			apiErr.RetryAfter = time.Duration(*env.RetryAfterSeconds) * time.Second
@@ -170,14 +184,15 @@ func RetryAfterFromHeader(header http.Header) time.Duration {
 }
 
 type errorEnvelope struct {
-	Code              string          `json:"code"`
-	Message           string          `json:"message"`
-	Status            json.RawMessage `json:"status"`
-	RequestID         string          `json:"requestId"`
-	Details           map[string]any  `json:"details"`
-	Error             *errorDetail    `json:"error"`
-	RetryAfterSeconds *int            `json:"retryAfterSeconds"`
-	RetryAfter        *int            `json:"retryAfter"`
+	Code                  string          `json:"code"`
+	Message               string          `json:"message"`
+	Status                json.RawMessage `json:"status"`
+	RequestID             string          `json:"requestId"`
+	Details               map[string]any  `json:"details"`
+	Error                 json.RawMessage `json:"error"`
+	RetryAfterSeconds     *int            `json:"retryAfterSeconds"`
+	RetryAfter            *int            `json:"retryAfter"`
+	ScopedCreationEnabled *bool           `json:"scopedCreationEnabled"`
 }
 
 type errorDetail struct {

@@ -25,8 +25,6 @@ limits it reads are the same ones a create would check.
 
 ## 2. Non-goals
 
-- Renaming an organization or changing its new-sandbox visibility (`PATCH /orgs/{org}`). Not
-  exposed here; it is an owner-only dashboard operation in the current scope.
 - Billing, wallet top-ups, seats and plan changes. Those are dashboard features, not part of v1.
 - Sandbox starts and batch scheduling. Use `sandboxes.Create` or `sandboxes.CreateMany`.
 - Webhook endpoints. Use `webhooks`.
@@ -43,6 +41,7 @@ limits it reads are the same ones a create would check.
 | `Me` | `Me(ctx, ...core.RequestOption) (*model.MeResponse, error)` | Current user and account status |
 | `Orgs` | `Orgs(ctx, ...core.RequestOption) (*model.OrgListResponse, error)` | Personal account first, then organizations |
 | `SetActiveOrg` | `SetActiveOrg(ctx, org string, ...core.RequestOption) (*model.ActiveOrgResponse, error)` | Empty string sends `null` for personal |
+| `UpdateOrg` | `UpdateOrg(ctx, org string, UpdateOrgRequest, ...core.RequestOption) (*OrgUpdateResult, error)` | Rename or set new-sandbox visibility |
 | `Limits` | `Limits(ctx, LimitsRequest, ...core.RequestOption) (*model.LimitsResponse, error)` | Read-only; wallet selection |
 | `APIKeys` | `APIKeys(ctx, ...core.RequestOption) (*model.APIKeysResponse, error)` | Metadata and scope catalog |
 | `CreateScopedAPIKey` | `CreateScopedAPIKey(ctx, CreateScopedAPIKeyRequest, ...core.RequestOption) (*model.APIKeySecretResponse, error)` | Secret shown once |
@@ -69,6 +68,8 @@ or an empty string for the personal account (`"org": null`).
 | Public type | Underlying model | Notes |
 |---|---|---|
 | `LimitsRequest` | — | Hand-written; `Org`, `TeamID` map to query parameters |
+| `UpdateOrgRequest` | — | Hand-written body; `Name`, `NewSandboxesPrivate` |
+| `OrgUpdateResult` | — | Changed fields; nil when unchanged |
 | `CreateScopedAPIKeyRequest` | — | Hand-written body; `Name`, `TTL`, `Preset`, `Actions`, `SandboxIDs`, `EnvironmentIDs` |
 | `UpdateDataRetentionRequest` | — | Hand-written body with `*bool` fields for explicit false |
 | `UpdateSecretsRequest` | — | Hand-written body; `EnvContents`, `SecretFiles` |
@@ -98,6 +99,7 @@ slice is serialized as `[]`, because `POST /secrets` is a full replacement.
 | `Me` | `GET` | `/me` | |
 | `Orgs` | `GET` | `/orgs` | |
 | `SetActiveOrg` | `PATCH` | `/orgs/active` | Body `{"org": string \| null}` |
+| `UpdateOrg` | `PATCH` | `/orgs/{org}` | Rename or `newSandboxesPrivate`; never retried |
 | `Limits` | `GET` | `/limits` | `org`, `teamId`; `X-Boat-Org` via option |
 | `APIKeys` | `GET` | `/api-keys` | |
 | `CreateScopedAPIKey` | `POST` | `/api-keys/scoped` | `201`; secret shown once |
@@ -132,14 +134,14 @@ API supplies one, `RetryAfter`. Use `core.IsCode(err, code)` or `errors.As`; nev
 - `409 api_key_expired`: an expired scoped key cannot be rotated.
 - `409` on `UpdateDataRetention`: the requested retention change conflicts with an accepted
   deletion operation or current account state.
-- `503` on `CreateScopedAPIKey`: scoped credential creation is not activated. The shared error
-  parser reports the status; see §10 for the typed-body limitation.
+- `503` on `CreateScopedAPIKey`: scoped credential creation is not activated. The code is
+  `scoped_api_key_creation_disabled` and `Details["scopedCreationEnabled"]` is false.
 
 Retries:
 
 - GETs (`Me`, `Orgs`, `Limits`, `APIKeys`, `APIKeyUsage`, `DataRetention`, `DeletionOperation`,
   `Secrets`) are retried on `429`, `500`, `502` and `503` by the transport.
-- `CreateScopedAPIKey`, `RotateAPIKey`, `RevokeAPIKey` and `UpdateDataRetention` set
+- `CreateScopedAPIKey`, `RotateAPIKey`, `RevokeAPIKey`, `UpdateOrg` and `UpdateDataRetention` set
   `core.Request.NoRetry`. A lost `201` can already have created a key, rotation invalidates the old
   secret, and retention changes are destructive.
 - `SetActiveOrg` and `UpdateSecrets` are POST/PATCH requests without an idempotency key, so the
@@ -217,6 +219,7 @@ Inline fragments are illustrative.
 - `account/me_test.go`: `Me` decoding, login and zero-data-retention flags.
 - `account/orgs_test.go`: `Orgs` wallets, `SetActiveOrg` body (`org` and explicit `null`) and
   `409 ambiguous_org`.
+- `account/org_update_test.go`: exact rename/visibility body, validation, and `NoRetry`.
 - `account/limits_test.go`: exact `org` and `teamId` query parameters, `X-Boat-Org`, response
   windows, and the empty-query case.
 - `account/apikeys_test.go`: inventory, scoped creation body and one-time secret, local scope
@@ -232,14 +235,8 @@ Inline fragments are illustrative.
 
 ## 10. Open questions / known gaps
 
-- `PATCH /orgs/{org}` (rename, new-sandbox visibility) is not exposed. It is owner-only and not in
-  this scope.
 - `UpdateDataRetention` cannot work from an API key by design. Automation that changes retention
   must use a browser/CLI session; the SDK deliberately does not try to bypass that.
-- The spec's `503` body for scoped key creation uses `error` as a string. The shared error parser
-  expects an error object, so the API error carries `Status == 503` with code `http_503` instead
-  of `scoped_api_key_creation_disabled`. Check the status and the catalog's
-  `ScopedCreationEnabled` flag.
 - There is no `WaitDeletionOperation` helper. Callers poll `DeletionOperation`; a shared polling
   utility may arrive with `jobs`.
 - `/secrets` returns plaintext environment values and file contents. That is the API contract, so

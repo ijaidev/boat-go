@@ -167,6 +167,12 @@ func TestService_CreateScopedAPIKey_MapsDisabled(t *testing.T) {
 	if !errors.As(err, &apiErr) || apiErr.Status != http.StatusServiceUnavailable {
 		t.Fatalf("error = %v, want HTTP 503", err)
 	}
+	if !core.IsCode(err, "scoped_api_key_creation_disabled") {
+		t.Fatalf("code = %q, want scoped_api_key_creation_disabled", apiErr.Code)
+	}
+	if got, _ := apiErr.Details["scopedCreationEnabled"].(bool); got {
+		t.Fatal("scopedCreationEnabled = true, want false")
+	}
 }
 
 func TestService_RotateAPIKey_ReturnsReplacementSecret(t *testing.T) {
