@@ -210,8 +210,6 @@ for {
   prompt event data. The SDK does not add an unsupported request field.
 - `GET /provider-models` is not wrapped. Callers need the provider-model catalog outside this
   service for now.
-- The root facade does not yet expose `Agents`; create the service with `agents.New` and the shared
-  transport until the facade is wired.
 - `Conversations`, `Steer` and `Interrupt` do not take per-call request options; use the client-level
   organization. Add options if a caller needs per-request organization scoping.
 - `WaitForPrompt` uses wall-clock polling. It does not consume events and therefore cannot return

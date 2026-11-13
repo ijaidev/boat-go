@@ -1,6 +1,7 @@
 package boat
 
 import (
+	"github.com/ijaidev/boat-go/agents"
 	"github.com/ijaidev/boat-go/core"
 	"github.com/ijaidev/boat-go/internal/transport"
 	"github.com/ijaidev/boat-go/sandboxes"
@@ -19,6 +20,7 @@ type Config = core.Config
 
 // Client is the root Boat SDK client. Its fields are concrete domain services.
 type Client struct {
+	Agents    *agents.Service
 	Sandboxes *sandboxes.Service
 	Snapshots *snapshots.Service
 }
@@ -33,6 +35,7 @@ func New(cfg Config) (*Client, error) {
 		return nil, err
 	}
 	return &Client{
+		Agents:    agents.New(transportClient),
 		Sandboxes: sandboxes.New(transportClient),
 		Snapshots: snapshots.New(transportClient),
 	}, nil

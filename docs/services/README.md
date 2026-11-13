@@ -16,7 +16,7 @@ A service is **not done** until:
 | Sandboxes | `sandboxes` | done | [sandboxes.md](sandboxes.md) |
 | Commands | `commands` | planned | — |
 | Files | `files` | planned | — |
-| Agents | `agents` | planned | — |
+| Agents | `agents` | done | [agents.md](agents.md) |
 | Snapshots | `snapshots` | done | [snapshots.md](snapshots.md) |
 | Environments | `environments` | planned | — |
 | Credentials | `credentials` | planned | — |

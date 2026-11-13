@@ -28,6 +28,9 @@ func TestNew_WiresServices(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
+	if client.Agents == nil {
+		t.Fatal("Agents = nil")
+	}
 	if client.Sandboxes == nil {
 		t.Fatal("Sandboxes = nil")
 	}
