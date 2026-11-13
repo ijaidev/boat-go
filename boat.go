@@ -4,6 +4,7 @@ import (
 	"github.com/ijaidev/boat-go/core"
 	"github.com/ijaidev/boat-go/internal/transport"
 	"github.com/ijaidev/boat-go/sandboxes"
+	"github.com/ijaidev/boat-go/snapshots"
 )
 
 // Version is the SDK version reported in the User-Agent. It is not the Boat API version.
@@ -19,6 +20,7 @@ type Config = core.Config
 // Client is the root Boat SDK client. Its fields are concrete domain services.
 type Client struct {
 	Sandboxes *sandboxes.Service
+	Snapshots *snapshots.Service
 }
 
 // New builds a client with one shared transport.
@@ -32,5 +34,6 @@ func New(cfg Config) (*Client, error) {
 	}
 	return &Client{
 		Sandboxes: sandboxes.New(transportClient),
+		Snapshots: snapshots.New(transportClient),
 	}, nil
 }

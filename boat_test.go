@@ -31,6 +31,9 @@ func TestNew_WiresServices(t *testing.T) {
 	if client.Sandboxes == nil {
 		t.Fatal("Sandboxes = nil")
 	}
+	if client.Snapshots == nil {
+		t.Fatal("Snapshots = nil")
+	}
 	sb, err := client.Sandboxes.Get(context.Background(), "bx_example")
 	if err != nil {
 		t.Fatalf("Get: %v", err)

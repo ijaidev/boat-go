@@ -20,6 +20,9 @@ type Stream[T any] = core.Stream[T]
 // SandboxPage is a page of sandboxes.
 type SandboxPage = core.Page[model.Sandbox]
 
+// SnapshotPage is a page of snapshots.
+type SnapshotPage = core.Page[model.SnapshotSummary]
+
 // WithIdempotencyKey sets the Idempotency-Key header.
 func WithIdempotencyKey(key string) RequestOption { return core.WithIdempotencyKey(key) }
 

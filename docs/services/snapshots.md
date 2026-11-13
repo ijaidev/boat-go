@@ -197,7 +197,7 @@ if _, err := io.Copy(dst, dl.Body); err != nil {
 }
 ```
 
-Inline fragments are illustrative. Complete examples live in `examples/`.
+Inline fragments are illustrative.
 
 ## 9. Testing notes
 
@@ -227,4 +227,3 @@ Inline fragments are illustrative. Complete examples live in `examples/`.
 - `ListSaved` exposes a single page because the endpoint has no cursor, even though its return type
   is `core.Page` for symmetry with the other list endpoints.
 - No `WaitSaved` helper. Callers poll `GetSaved`; a shared polling utility is not in the SDK yet.
-- The root facade does not wire `Snapshots` yet; the maintainer adds it when the service merges.
