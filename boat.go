@@ -10,6 +10,7 @@ import (
 	"github.com/ijaidev/boat-go/environments"
 	"github.com/ijaidev/boat-go/files"
 	"github.com/ijaidev/boat-go/internal/transport"
+	"github.com/ijaidev/boat-go/jobs"
 	"github.com/ijaidev/boat-go/sandboxes"
 	"github.com/ijaidev/boat-go/snapshots"
 	"github.com/ijaidev/boat-go/telemetry"
@@ -35,6 +36,7 @@ type Client struct {
 	Credentials  *credentials.Service
 	Environments *environments.Service
 	Files        *files.Service
+	Jobs         *jobs.Service
 	Sandboxes    *sandboxes.Service
 	Snapshots    *snapshots.Service
 	Telemetry    *telemetry.Service
@@ -50,17 +52,28 @@ func New(cfg Config) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	sandboxService := sandboxes.New(transportClient)
+	commandService := commands.New(transportClient)
+	fileService := files.New(transportClient)
+	snapshotService := snapshots.New(transportClient)
+
 	return &Client{
 		Account:      account.New(transportClient),
 		Agents:       agents.New(transportClient),
 		CI:           ci.New(transportClient),
-		Commands:     commands.New(transportClient),
+		Commands:     commandService,
 		Credentials:  credentials.New(transportClient),
 		Environments: environments.New(transportClient),
-		Files:        files.New(transportClient),
-		Sandboxes:    sandboxes.New(transportClient),
-		Snapshots:    snapshots.New(transportClient),
-		Telemetry:    telemetry.New(transportClient),
-		Webhooks:     webhooks.New(transportClient),
+		Files:        fileService,
+		Jobs: jobs.New(jobs.Config{
+			Sandboxes: sandboxService,
+			Commands:  commandService,
+			Files:     fileService,
+			Snapshots: snapshotService,
+		}),
+		Sandboxes: sandboxService,
+		Snapshots: snapshotService,
+		Telemetry: telemetry.New(transportClient),
+		Webhooks:  webhooks.New(transportClient),
 	}, nil
 }

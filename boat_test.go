@@ -55,6 +55,9 @@ func TestNew_WiresServices(t *testing.T) {
 	if client.Webhooks == nil {
 		t.Fatal("Webhooks = nil")
 	}
+	if client.Jobs == nil {
+		t.Fatal("Jobs = nil")
+	}
 	if client.Sandboxes == nil {
 		t.Fatal("Sandboxes = nil")
 	}

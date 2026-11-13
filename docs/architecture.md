@@ -1,8 +1,9 @@
 # Architecture
 
-Status: implementation started. The kernel, transport, generated `model` package, root facade and
-the `sandboxes` service exist. The remaining domain services are in progress. This document
-describes the target architecture and the rules that keep it maintainable as the SDK grows.
+Status: implementation complete for the planned v1 packages. The kernel, transport, generated
+`model` package, root facade, all domain services and `jobs/` exist. Live/manual verification and
+ongoing spec updates remain. This document describes the target architecture and the rules that keep
+it maintainable as the SDK grows.
 
 ## 1. Context
 

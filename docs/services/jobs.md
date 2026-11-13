@@ -175,8 +175,7 @@ if err := client.Jobs.PullSnapshot(ctx, snapshotID, "workspace/result.json", f);
 }
 ```
 
-Inline fragments are illustrative. The root client does not expose `Jobs` yet; wire a `jobs.Service`
-from a `jobs.Config` until the facade follows.
+Inline fragments are illustrative.
 
 ## 9. Testing notes
 
@@ -193,8 +192,6 @@ from a `jobs.Config` until the facade follows.
 
 ## 10. Open questions / known gaps
 
-- The root `boat.Client` does not have a `Jobs` field in this change. A follow-up wires
-  `jobs.New` into the facade.
 - `Run` has no per-call `core.RequestOption` argument; organization scope must come from the
   transport configuration.
 - The cleanup timeout is a fixed 30 seconds. It is not configurable yet.
