@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/ijaidev/boat-go/commands"
 	"github.com/ijaidev/boat-go/core"
@@ -206,5 +207,80 @@ func TestService_RunCommand_AttachError(t *testing.T) {
 	_, err := svc.RunCommand(context.Background(), "bx_example", commands.RunRequest{Command: "true"})
 	if !core.IsCode(err, "agent_outdated") {
 		t.Fatalf("error = %v, want agent_outdated", err)
+	}
+}
+
+func TestService_RunCommand_CloseUnblocksNext(t *testing.T) {
+	t.Parallel()
+
+	attachReady := make(chan struct{})
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/sandboxes/bx_example/commands":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = io.WriteString(w, `{"ok":true,"type":"command.started","success":true,"processId":42,"pid":42,"command":"sleep 100"}`)
+		case r.Method == http.MethodGet && r.URL.Path == "/sandboxes/bx_example/commands/42/stream":
+			w.Header().Set("Content-Type", "application/x-ndjson")
+			flusher, ok := w.(http.Flusher)
+			if !ok {
+				t.Error("response writer does not support flush")
+				return
+			}
+			_, _ = io.WriteString(w, `{"type":"attached","processId":42,"stdoutOffset":0,"stderrOffset":0}`+"\n")
+			flusher.Flush()
+			close(attachReady)
+			<-r.Context().Done()
+		default:
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	svc := commands.New(testutil.Transport(t, srv.URL, "boat_test_key"))
+	stream, err := svc.RunCommand(context.Background(), "bx_example", commands.RunRequest{Command: "sleep 100"})
+	if err != nil {
+		t.Fatalf("RunCommand: %v", err)
+	}
+
+	started, err := stream.Next(context.Background())
+	if err != nil {
+		t.Fatalf("first Next: %v", err)
+	}
+	if started.Type != commands.EventStarted {
+		t.Fatalf("first event = %q, want started", started.Type)
+	}
+
+	select {
+	case <-attachReady:
+	case <-time.After(2 * time.Second):
+		t.Fatal("attach request did not start")
+	}
+
+	nextDone := make(chan error, 1)
+	go func() {
+		_, err := stream.Next(context.Background())
+		nextDone <- err
+	}()
+
+	closeDone := make(chan error, 1)
+	go func() { closeDone <- stream.Close() }()
+
+	select {
+	case err := <-closeDone:
+		if err != nil {
+			t.Fatalf("Close: %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("Close blocked behind an in-flight Next")
+	}
+
+	select {
+	case err := <-nextDone:
+		if !errors.Is(err, io.EOF) {
+			t.Fatalf("Next after Close = %v, want io.EOF", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("Next did not return after Close")
 	}
 }

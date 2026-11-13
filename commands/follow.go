@@ -85,29 +85,44 @@ type followStream struct {
 }
 
 func (f *followStream) Next(ctx context.Context) (Event, error) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-
 	var zero Event
+
+	f.mu.Lock()
 	if f.done {
-		if f.err != nil {
-			return zero, f.err
+		err := f.err
+		f.mu.Unlock()
+		if err != nil {
+			return zero, err
 		}
 		return zero, io.EOF
 	}
 	if !f.startedSent {
 		f.startedSent = true
-		return f.startedEvent(), nil
+		event := f.startedEvent()
+		f.mu.Unlock()
+		return event, nil
 	}
+	inner := f.inner
+	f.mu.Unlock()
 
 	for {
-		frame, err := f.inner.Next(ctx)
+		frame, err := inner.Next(ctx)
 		if err != nil {
-			_ = f.inner.Close()
+			f.mu.Lock()
+			closed := f.done
+			if closed {
+				f.mu.Unlock()
+				_ = inner.Close()
+				return zero, io.EOF
+			}
 			f.done = true
 			f.err = err
+			f.inner = nil
+			f.mu.Unlock()
+			_ = inner.Close()
 			return zero, err
 		}
+
 		switch frame.Type {
 		case model.CommandAttachFrameTypeAttached:
 			f.applyOffsets(frame)
@@ -121,21 +136,35 @@ func (f *followStream) Next(ctx context.Context) (Event, error) {
 			continue
 		case model.CommandAttachFrameTypeReconnect:
 			f.applyOffsets(frame)
-			_ = f.inner.Close()
-			inner, err := f.svc.Attach(ctx, f.sandboxID, f.processID, AttachRequest{
+			_ = inner.Close()
+			next, attachErr := f.svc.Attach(ctx, f.sandboxID, f.processID, AttachRequest{
 				StdoutOffset: f.stdoutOffset,
 				StderrOffset: f.stderrOffset,
 			}, f.opts...)
-			if err != nil {
+			if attachErr != nil {
+				f.mu.Lock()
 				f.done = true
-				f.err = err
-				return zero, err
+				f.err = attachErr
+				f.inner = nil
+				f.mu.Unlock()
+				return zero, attachErr
 			}
-			f.inner = inner
+			f.mu.Lock()
+			if f.done {
+				f.mu.Unlock()
+				_ = next.Close()
+				return zero, io.EOF
+			}
+			f.inner = next
+			f.mu.Unlock()
+			inner = next
 		case model.CommandAttachFrameTypeExit:
 			f.applyOffsets(frame)
-			_ = f.inner.Close()
+			_ = inner.Close()
+			f.mu.Lock()
 			f.done = true
+			f.inner = nil
+			f.mu.Unlock()
 			return Event{
 				Type:      EventExit,
 				ProcessID: f.processID,
@@ -145,8 +174,11 @@ func (f *followStream) Next(ctx context.Context) (Event, error) {
 			}, nil
 		case model.CommandAttachFrameTypeError:
 			f.applyOffsets(frame)
-			_ = f.inner.Close()
+			_ = inner.Close()
+			f.mu.Lock()
 			f.done = true
+			f.inner = nil
+			f.mu.Unlock()
 			return Event{
 				Type:      EventError,
 				ProcessID: f.processID,
@@ -154,28 +186,36 @@ func (f *followStream) Next(ctx context.Context) (Event, error) {
 				Message:   stringValue(frame.Message),
 			}, nil
 		default:
-			_ = f.inner.Close()
+			_ = inner.Close()
+			f.mu.Lock()
 			f.done = true
 			f.err = fmt.Errorf("commands: unknown attach frame type %q", frame.Type)
-			return zero, f.err
+			f.inner = nil
+			err := f.err
+			f.mu.Unlock()
+			return zero, err
 		}
 	}
 }
 
 // Close releases the current attach stream. It does not stop the detached command.
+//
+// Close does not wait for an in-flight Next: closing the response body unblocks it, and Next then
+// returns io.EOF.
 func (f *followStream) Close() error {
 	f.mu.Lock()
-	defer f.mu.Unlock()
-	if f.done && f.inner == nil {
+	if f.done {
+		f.mu.Unlock()
 		return nil
 	}
 	f.done = true
-	if f.inner == nil {
+	inner := f.inner
+	f.inner = nil
+	f.mu.Unlock()
+	if inner == nil {
 		return nil
 	}
-	err := f.inner.Close()
-	f.inner = nil
-	return err
+	return inner.Close()
 }
 
 func (f *followStream) startedEvent() Event {
