@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Boat Go SDK">
+  <defs>
+    <linearGradient id="bg" x1="8" y1="4" x2="56" y2="62" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#071A2B"/>
+      <stop offset="0.55" stop-color="#0A2A3B"/>
+      <stop offset="1" stop-color="#0C3F4C"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="translate(32 18) rotate(90) scale(34)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#22D3EE" stop-opacity="0.32"/>
+      <stop offset="0.65" stop-color="#22D3EE" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#22D3EE" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="sail" x1="34" y1="11" x2="46" y2="35" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#D9F6FA"/>
+    </linearGradient>
+    <linearGradient id="jib" x1="18" y1="18" x2="30" y2="35" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#E9FBFD"/>
+      <stop offset="1" stop-color="#9DE7F0"/>
+    </linearGradient>
+    <linearGradient id="hull" x1="14" y1="38" x2="50" y2="52" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF8E8"/>
+      <stop offset="1" stop-color="#D7E9EC"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="64" height="64" rx="15" fill="url(#bg)"/>
+  <rect width="64" height="64" rx="15" fill="url(#glow)"/>
+  <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="14.25" fill="none" stroke="#FFFFFF" stroke-opacity="0.08" stroke-width="1.5"/>
+
+  <!-- mast -->
+  <rect x="31" y="7" width="2" height="32" rx="1" fill="#082330"/>
+
+  <!-- sails -->
+  <path d="M34 7 L50 35 L34 35 Z" fill="url(#sail)"/>
+  <path d="M34 7 L34 35 L42 35 Z" fill="#BFEFF5" opacity="0.55"/>
+  <path d="M30 12 L30 35 L14 35 Z" fill="url(#jib)"/>
+  <path d="M30 12 L30 35 L22.5 35 Z" fill="#FFFFFF" opacity="0.38"/>
+
+  <!-- hull -->
+  <path d="M9 37 H55 L47.5 49.5 C38.5 53.8 25.5 53.8 16.5 49.5 Z" fill="url(#hull)"/>
+  <path d="M13 40.5 H51" stroke="#FFFFFF" stroke-opacity="0.6" stroke-width="1.3" stroke-linecap="round"/>
+  <path d="M16.5 49.5 C25.5 53.8 38.5 53.8 47.5 49.5" fill="none" stroke="#082330" stroke-opacity="0.12" stroke-width="1.2"/>
+
+  <!-- wake -->
+  <path d="M7 57.5 C14 53.5 21 53.5 28 57.5 C35 61.5 42 61.5 49 57.5 C52 55.5 55 55.5 57 57" fill="none" stroke="#22D3EE" stroke-width="2.4" stroke-linecap="round" opacity="0.9"/>
+  <path d="M18 61 C23 58.5 28 58.5 33 61 C38 63.5 43 63.5 48 61" fill="none" stroke="#67E8F9" stroke-width="1.1" stroke-linecap="round" opacity="0.35"/>
+</svg>
