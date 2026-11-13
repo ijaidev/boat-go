@@ -6,6 +6,7 @@ import (
 	"github.com/ijaidev/boat-go/ci"
 	"github.com/ijaidev/boat-go/commands"
 	"github.com/ijaidev/boat-go/core"
+	"github.com/ijaidev/boat-go/credentials"
 	"github.com/ijaidev/boat-go/environments"
 	"github.com/ijaidev/boat-go/files"
 	"github.com/ijaidev/boat-go/internal/transport"
@@ -30,6 +31,7 @@ type Client struct {
 	Agents       *agents.Service
 	CI           *ci.Service
 	Commands     *commands.Service
+	Credentials  *credentials.Service
 	Environments *environments.Service
 	Files        *files.Service
 	Sandboxes    *sandboxes.Service
@@ -51,6 +53,7 @@ func New(cfg Config) (*Client, error) {
 		Agents:       agents.New(transportClient),
 		CI:           ci.New(transportClient),
 		Commands:     commands.New(transportClient),
+		Credentials:  credentials.New(transportClient),
 		Environments: environments.New(transportClient),
 		Files:        files.New(transportClient),
 		Sandboxes:    sandboxes.New(transportClient),

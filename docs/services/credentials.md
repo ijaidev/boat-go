@@ -248,8 +248,6 @@ request bodies from `SetKey`, `AddAccount` or `SetCustomAPI`.
 
 ## 10. Open questions / known gaps
 
-- The root `boat.Client` does not expose `Credentials` yet. Construct the service with
-  `credentials.New(transport)` until the facade is wired.
 - The SDK validates required identity and secret fields locally but leaves the `days` range, the
   custom API name pattern and the base URL format to the API.
 - There is no cursor pagination on profile or account lists because the v1 API has none.

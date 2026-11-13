@@ -40,6 +40,9 @@ func TestNew_WiresServices(t *testing.T) {
 	if client.Commands == nil {
 		t.Fatal("Commands = nil")
 	}
+	if client.Credentials == nil {
+		t.Fatal("Credentials = nil")
+	}
 	if client.Environments == nil {
 		t.Fatal("Environments = nil")
 	}
