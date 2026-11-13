@@ -19,6 +19,18 @@ reference for **capabilities**, not for structure. The Go SDK should feel native
 The OpenAPI spec (<https://docs.boat.dev/openapi/boat-v1.yaml>) is the source of truth for request
 and response schemas. The hand-written facade is the source of truth for ergonomics.
 
+**API in one screen**
+
+- Base URL `https://boat.dev/api/v1`; `Authorization: Bearer boat_...` (legacy `box_...` works).
+- Optional organization scope through `X-Boat-Org: <org>` or `?org=`.
+- Idempotency: `Idempotency-Key` on create and fork.
+- Success envelope `{ "ok": true, "type": "...", ... }`.
+- Error envelope `{ "ok": false, "type": "sandbox.error", "status", "code", "message", "requestId", "error" }`.
+- Pagination: cursor plus `pageInfo.nextCursor` / `hasMore`.
+- Streaming: `application/x-ndjson` for command output; events use cursor polling.
+- Binary: `application/octet-stream` and `application/x-tar`.
+- Webhooks: lifecycle events signed with HMAC-SHA256.
+
 ## 2. Goals and non-goals
 
 **Goals**
@@ -75,10 +87,46 @@ flowchart LR
   boat --> model
 ```
 
-The canonical dependency table lives in [AGENTS.md §4.2](../AGENTS.md#42-dependency-rules-canonical).
-Do not duplicate it here; keep the graph above and the table in one place.
+Canonical dependency table:
+
+| Package | May import | Must not import |
+|---|---|---|
+| `model` | standard library only | anything else in this module |
+| `core` | standard library only | services, transport, root |
+| `internal/transport` | `core` | services, root |
+| each service | `core`, `model` | another service, `jobs`, root |
+| `jobs` | services, `core`, `model` | root |
+| `boat` (root) | everything above | — |
+| `webhooks/verify.go` | standard library, `model` | transport |
 
 Services never call services. If two domains must cooperate, the workflow belongs in `jobs/`.
+`internal/transport` implements `core.Doer`.
+
+### 4.1 Root facade
+
+```go
+package boat
+
+type Client struct {
+    Account      *account.Service
+    Agents       *agents.Service
+    CI           *ci.Service
+    Commands     *commands.Service
+    Credentials  *credentials.Service
+    Environments *environments.Service
+    Files        *files.Service
+    Jobs         *jobs.Service
+    Sandboxes    *sandboxes.Service
+    Snapshots    *snapshots.Service
+    Telemetry    *telemetry.Service
+    Webhooks     *webhooks.Service
+}
+
+func New(cfg Config) (*Client, error)
+```
+
+Fields, not getters. Services are concrete. `New` wires one transport and injects it into each
+service. The facade only wires and re-exports; workflow logic belongs in `jobs/`.
 
 ## 5. Core kernel
 
@@ -133,6 +181,54 @@ type Page[T any] struct {
 
 `Do` is for JSON envelopes. `DoRaw` is for NDJSON, binary downloads and any response the caller
 must stream or inspect directly.
+
+### 5.1 Service pattern
+
+```go
+package sandboxes
+
+type Service struct {
+    d core.Doer
+}
+
+func New(d core.Doer) *Service {
+    return &Service{d: d}
+}
+
+func (s *Service) Create(
+    ctx context.Context,
+    req CreateRequest,
+    opts ...core.RequestOption,
+) (*model.Sandbox, error) {
+    var out model.CreateSandboxResponse
+    if err := s.d.Do(ctx, &core.Request{
+        Method: http.MethodPost,
+        Path:   "/sandboxes",
+        JSON:   req,
+    }, &out, opts...); err != nil {
+        return nil, err
+    }
+    return &out.Sandbox, nil
+}
+```
+
+- Constructors return `*Service`, not an interface.
+- Do not define `SandboxService` / `ISandboxService` god interfaces.
+- Consumers may define narrow interfaces for mocking.
+- Do not add an interface until there is a second implementation or a real seam.
+
+### 5.2 Naming and fields
+
+- Packages: lowercase, no underscores, domain-scoped (`sandboxes`, not `sandbox_utils`).
+- Files: lowercase; `snake_case.go` is acceptable; tests end in `_test.go`.
+- Initialisms: `ID`, `URL`, `HTTP`, `API`, `JSON`, `TTY`.
+- Request types: `CreateRequest`, `ResumeRequest`, `ForkRequest`.
+- Response types: reuse `model.*`; alias only when it improves discoverability.
+- Error strings: lowercase, no trailing punctuation.
+- Avoid stutter: `sandboxes.Service`, not `sandboxes.SandboxesService`.
+- No package named `utils`, `common`, `helpers`, `types`, or `interfaces`.
+- Use pointers for optional scalar fields unless the generated model provides a dedicated optional
+  type. Document the semantics of optional slices, maps and nullable fields.
 
 ## 6. Request lifecycle
 
