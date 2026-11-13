@@ -5,6 +5,7 @@ import (
 	"github.com/ijaidev/boat-go/ci"
 	"github.com/ijaidev/boat-go/commands"
 	"github.com/ijaidev/boat-go/core"
+	"github.com/ijaidev/boat-go/environments"
 	"github.com/ijaidev/boat-go/files"
 	"github.com/ijaidev/boat-go/internal/transport"
 	"github.com/ijaidev/boat-go/sandboxes"
@@ -24,13 +25,14 @@ type Config = core.Config
 
 // Client is the root Boat SDK client. Its fields are concrete domain services.
 type Client struct {
-	Agents    *agents.Service
-	CI        *ci.Service
-	Commands  *commands.Service
-	Files     *files.Service
-	Sandboxes *sandboxes.Service
-	Snapshots *snapshots.Service
-	Telemetry *telemetry.Service
+	Agents       *agents.Service
+	CI           *ci.Service
+	Commands     *commands.Service
+	Environments *environments.Service
+	Files        *files.Service
+	Sandboxes    *sandboxes.Service
+	Snapshots    *snapshots.Service
+	Telemetry    *telemetry.Service
 }
 
 // New builds a client with one shared transport.
@@ -43,12 +45,13 @@ func New(cfg Config) (*Client, error) {
 		return nil, err
 	}
 	return &Client{
-		Agents:    agents.New(transportClient),
-		CI:        ci.New(transportClient),
-		Commands:  commands.New(transportClient),
-		Files:     files.New(transportClient),
-		Sandboxes: sandboxes.New(transportClient),
-		Snapshots: snapshots.New(transportClient),
-		Telemetry: telemetry.New(transportClient),
+		Agents:       agents.New(transportClient),
+		CI:           ci.New(transportClient),
+		Commands:     commands.New(transportClient),
+		Environments: environments.New(transportClient),
+		Files:        files.New(transportClient),
+		Sandboxes:    sandboxes.New(transportClient),
+		Snapshots:    snapshots.New(transportClient),
+		Telemetry:    telemetry.New(transportClient),
 	}, nil
 }

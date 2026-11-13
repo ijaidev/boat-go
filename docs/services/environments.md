@@ -193,7 +193,6 @@ for _, env := range envs {
 
 ## 10. Open questions / known gaps
 
-- The root `boat.Client` does not expose `Environments` yet; wiring it is a separate facade change.
 - `Create` returns the full environment list because that is the wire response. Callers locate the
   new environment by `Name`.
 - `List` has no cursor. If the API later paginates `/environments`, this service will need a page
