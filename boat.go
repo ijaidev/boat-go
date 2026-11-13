@@ -13,6 +13,7 @@ import (
 	"github.com/ijaidev/boat-go/sandboxes"
 	"github.com/ijaidev/boat-go/snapshots"
 	"github.com/ijaidev/boat-go/telemetry"
+	"github.com/ijaidev/boat-go/webhooks"
 )
 
 // Version is the SDK version reported in the User-Agent. It is not the Boat API version.
@@ -37,6 +38,7 @@ type Client struct {
 	Sandboxes    *sandboxes.Service
 	Snapshots    *snapshots.Service
 	Telemetry    *telemetry.Service
+	Webhooks     *webhooks.Service
 }
 
 // New builds a client with one shared transport.
@@ -59,5 +61,6 @@ func New(cfg Config) (*Client, error) {
 		Sandboxes:    sandboxes.New(transportClient),
 		Snapshots:    snapshots.New(transportClient),
 		Telemetry:    telemetry.New(transportClient),
+		Webhooks:     webhooks.New(transportClient),
 	}, nil
 }
