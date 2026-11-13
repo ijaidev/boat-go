@@ -67,8 +67,9 @@ func (s *Service) Stop(ctx context.Context, sandboxID string, processID int, opt
 	}
 	var out model.CommandStopResponse
 	if err := s.do(ctx, &core.Request{
-		Method: http.MethodDelete,
-		Path:   commandPath(sandboxID, processID),
+		Method:  http.MethodDelete,
+		Path:    commandPath(sandboxID, processID),
+		NoRetry: true,
 	}, &out, opts...); err != nil {
 		return nil, err
 	}

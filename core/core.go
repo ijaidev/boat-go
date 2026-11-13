@@ -31,6 +31,10 @@ type Request struct {
 	Header http.Header
 	JSON   any
 	Body   io.Reader
+
+	// NoRetry prevents the transport from retrying this request, even when it carries an
+	// Idempotency-Key. Use it for non-idempotent operations such as command execution.
+	NoRetry bool
 }
 
 // SetHeader sets a request header, creating the header map when needed.

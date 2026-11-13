@@ -192,7 +192,9 @@ is still an error the caller must handle.
 
 For create and fork, generate one UUID key per logical call, store it on the request, and reuse it
 verbatim on every attempt. Default-on; callers may override it. Only retry a request when its body
-is replayable (`JSON` or a body factory); never retry a one-shot `io.Reader`.
+is replayable (`JSON` or a body factory); never retry a one-shot `io.Reader`. Set
+`core.Request.NoRetry` for non-idempotent calls (commands and process stops) so a caller-supplied
+Idempotency-Key cannot turn them into retries.
 
 ## 9. Pagination
 

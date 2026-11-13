@@ -84,7 +84,7 @@ func (c *Client) DoRaw(ctx context.Context, req *core.Request, opts ...core.Requ
 	}
 
 	replayable := req.Body == nil
-	retryable := replayable && (isSafeMethod(req.Method) || req.Header.Get("Idempotency-Key") != "")
+	retryable := replayable && !req.NoRetry && (isSafeMethod(req.Method) || req.Header.Get("Idempotency-Key") != "")
 	attempts := c.maxRetries + 1
 
 	for attempt := range attempts {

@@ -532,3 +532,26 @@ func TestClient_Do_RequestOptionHeader(t *testing.T) {
 		t.Fatalf("X-Custom = %q", got)
 	}
 }
+
+func TestClient_Do_NoRetryDisablesRetry(t *testing.T) {
+	t.Parallel()
+
+	var calls atomic.Int32
+	client, _ := newClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		w.WriteHeader(http.StatusServiceUnavailable)
+		_, _ = io.WriteString(w, `{"ok":false,"type":"sandbox.error","status":503,"code":"no_ready_machine","message":"busy"}`)
+	}), nil)
+
+	err := client.Do(context.Background(), &core.Request{
+		Method:  http.MethodPost,
+		Path:    "/sandboxes/bx_1/commands",
+		NoRetry: true,
+	}, nil, core.WithIdempotencyKey("key-1"))
+	if err == nil {
+		t.Fatal("Do = nil, want error")
+	}
+	if calls.Load() != 1 {
+		t.Fatalf("calls = %d, want 1", calls.Load())
+	}
+}

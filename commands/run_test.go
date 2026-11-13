@@ -325,3 +325,29 @@ func TestService_Stream_ReturnsErrorFrame(t *testing.T) {
 		t.Fatalf("Next after error frame = %v, want io.EOF", err)
 	}
 }
+
+func TestService_Run_NoRetryWithCallerIdempotencyKey(t *testing.T) {
+	t.Parallel()
+
+	var calls atomic.Int32
+	srv := testutil.NewServer(t, testutil.Route{
+		Method: http.MethodPost,
+		Path:   "/sandboxes/bx_example/commands",
+		Status: http.StatusServiceUnavailable,
+		Body:   `{"ok":false,"type":"sandbox.error","status":503,"code":"no_ready_machine","message":"busy"}`,
+		Assert: func(t *testing.T, r *http.Request) {
+			t.Helper()
+			calls.Add(1)
+		},
+	})
+	svc := commands.New(testutil.Transport(t, srv.URL, "boat_test_key"))
+
+	_, err := svc.Run(context.Background(), "bx_example", commands.RunRequest{Command: "echo hi"},
+		core.WithIdempotencyKey("key-1"))
+	if err == nil {
+		t.Fatal("Run = nil, want error")
+	}
+	if calls.Load() != 1 {
+		t.Fatalf("calls = %d, want 1", calls.Load())
+	}
+}

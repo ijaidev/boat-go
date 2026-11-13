@@ -28,9 +28,10 @@ func (s *Service) Run(ctx context.Context, sandboxID string, req RunRequest, opt
 	}
 	var out model.CommandResponse
 	if err := s.do(ctx, &core.Request{
-		Method: http.MethodPost,
-		Path:   sandboxPath(sandboxID, "commands"),
-		JSON:   commandBody(req),
+		Method:  http.MethodPost,
+		Path:    sandboxPath(sandboxID, "commands"),
+		JSON:    commandBody(req),
+		NoRetry: true,
 	}, &out, opts...); err != nil {
 		return nil, err
 	}
@@ -49,9 +50,10 @@ func (s *Service) Stream(ctx context.Context, sandboxID string, req RunRequest, 
 	body := commandBody(req)
 	body.Stream = core.Ptr(true)
 	return openStream[model.CommandStreamFrame](s, ctx, &core.Request{
-		Method: http.MethodPost,
-		Path:   sandboxPath(sandboxID, "commands"),
-		JSON:   body,
+		Method:  http.MethodPost,
+		Path:    sandboxPath(sandboxID, "commands"),
+		JSON:    body,
+		NoRetry: true,
 	}, opts...)
 }
 
@@ -67,9 +69,10 @@ func (s *Service) Start(ctx context.Context, sandboxID string, req RunRequest, o
 	body.Detached = core.Ptr(true)
 	var out model.CommandStartedResponse
 	if err := s.do(ctx, &core.Request{
-		Method: http.MethodPost,
-		Path:   sandboxPath(sandboxID, "commands"),
-		JSON:   body,
+		Method:  http.MethodPost,
+		Path:    sandboxPath(sandboxID, "commands"),
+		JSON:    body,
+		NoRetry: true,
 	}, &out, opts...); err != nil {
 		return nil, err
 	}

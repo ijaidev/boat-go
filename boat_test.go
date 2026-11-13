@@ -31,6 +31,9 @@ func TestNew_WiresServices(t *testing.T) {
 	if client.Agents == nil {
 		t.Fatal("Agents = nil")
 	}
+	if client.Commands == nil {
+		t.Fatal("Commands = nil")
+	}
 	if client.Sandboxes == nil {
 		t.Fatal("Sandboxes = nil")
 	}

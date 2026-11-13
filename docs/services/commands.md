@@ -46,9 +46,9 @@ concurrent use. A service instance is stateless beyond its transport.
 | `Processes` | `Processes(ctx, sandboxID, ...core.RequestOption) (*model.ProcessListResponse, error)` | Live or last sample |
 | `RunCommand` | `RunCommand(ctx, sandboxID, RunRequest, ...core.RequestOption) (core.Stream[Event], error)` | Detached start plus resumable follow |
 
-Request options apply per call. `core.WithOrg` overrides the client organization. Commands never
-send an `Idempotency-Key`; adding one through `core.WithIdempotencyKey` would make the transport
-retry the `POST`, which the service itself does not do.
+Request options apply per call. `core.WithOrg` overrides the client organization. Command requests
+set `core.Request.NoRetry`, so the transport never retries them even if a caller supplies
+`core.WithIdempotencyKey`. The service does not generate a key.
 
 Timeouts: a synchronous `Run` or `Stream` uses 30 seconds by default and accepts 1-600 seconds.
 `Start` and `RunCommand` have no SDK timeout; an explicit `TimeoutSeconds` is forwarded.
@@ -102,9 +102,9 @@ stream.
   carries `core.Retryable(err) == true`; retrying is the caller's decision.
 - `502` without that hint: the command may already be running. Never retry automatically.
 
-The transport retries only safe methods or requests with an Idempotency-Key. Command `POST` requests
-have no key, so they are never retried. GET reads (status, history, logs, processes) are idempotent
-and may be retried by the transport on 429, 500, 502 and 503.
+Command `POST` and `DELETE` requests set `core.Request.NoRetry`, so the transport never retries them,
+with or without an Idempotency-Key. GET reads (status, history, logs, processes) are idempotent and
+may be retried by the transport on 429, 500, 502 and 503.
 
 Errors are `*core.APIError`; use `core.IsCode`, `core.Retryable` and `core.RetryAfter`, never string
 matching.
