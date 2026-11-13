@@ -20,7 +20,7 @@ A service is **not done** until:
 | Snapshots | `snapshots` | done | [snapshots.md](snapshots.md) |
 | Environments | `environments` | done | [environments.md](environments.md) |
 | Credentials | `credentials` | planned | — |
-| Account | `account` | planned | — |
+| Account | `account` | done | [account.md](account.md) |
 | Webhooks | `webhooks` | planned | — |
 | Telemetry | `telemetry` | done | [telemetry.md](telemetry.md) |
 | CI | `ci` | done | [ci.md](ci.md) |
