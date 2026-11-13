@@ -34,7 +34,6 @@ concurrent use. A service instance is stateless beyond its transport.
   decodes it instead of returning a body.
 - A separate job-list endpoint. Jobs come from `Overview`; there is no cursor pagination.
 - Create → push → exec → usage → delete orchestration. That belongs in `jobs/`.
-- Root client wiring. The maintainer adds `CI *ci.Service` to the root facade after merge.
 
 ## 3. Public API
 
@@ -159,9 +158,6 @@ if err != nil {
 _ = log.Log
 ```
 
-A complete example under `examples/` needs the root `Client` to expose `CI`; that wiring is done by the
-maintainer after merge.
-
 ## 9. Testing notes
 
 - `ci/ci_test.go` covers the shared error mapping (400, 401, 402, 403, 404, 409, 429, 500, 502, 503),
@@ -179,7 +175,6 @@ maintainer after merge.
 
 ## 10. Open questions / known gaps
 
-- The root facade is not wired in this change; `boat.Client` gains `CI` after merge.
 - `JobLog` returns JSON because the pinned spec defines `application/json`. If the API later streams
   text or binary logs, this method needs a new body-returning shape and a `Close` contract.
 - `PublicRepos` exposes `users` as a list only. The spec's comma-separated string form is left to the

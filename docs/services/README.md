@@ -23,7 +23,7 @@ A service is **not done** until:
 | Account | `account` | planned | — |
 | Webhooks | `webhooks` | planned | — |
 | Telemetry | `telemetry` | done | [telemetry.md](telemetry.md) |
-| CI | `ci` | planned | — |
+| CI | `ci` | done | [ci.md](ci.md) |
 | Jobs | `jobs` | planned | — |
 
 Status values: `planned`, `in progress`, `done`, `deprecated`.
